@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 intents = discord.Intents.default()
-intents.message_content = True  # ✅ Cần thiết để bot đọc lệnh
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 TASK_FILE = "tasks.json"
@@ -24,10 +24,11 @@ def save_tasks(tasks):
 
 @bot.event
 async def on_ready():
-    print(f"Bot đang hoạt động với tên: {bot.user}")
+    print(f"✅ Bot đang hoạt động với tên: {bot.user}")
 
 @bot.command()
 async def addtask(ctx, *, task_info):
+    """Thêm task mới: !addtask Tên - @người - deadline"""
     parts = task_info.split(" - ")
     if len(parts) != 3:
         await ctx.send("❌ Định dạng sai. Ví dụ: `!addtask Viết báo cáo - @Tuấn - 30/06`")
@@ -36,7 +37,8 @@ async def addtask(ctx, *, task_info):
     task = {
         "task": task_name.strip(),
         "assigned": assigned_to.strip(),
-        "deadline": deadline.strip()
+        "deadline": deadline.strip(),
+        "done": False
     }
     tasks = load_tasks()
     tasks.append(task)
@@ -45,18 +47,20 @@ async def addtask(ctx, *, task_info):
 
 @bot.command()
 async def listtasks(ctx):
+    """Hiển thị tất cả task"""
     tasks = load_tasks()
     if not tasks:
         await ctx.send("📭 Không có task nào.")
         return
     msg = "**📋 Danh sách task:**\n"
     for i, t in enumerate(tasks, 1):
-        msg += f"{i}. **{t['task']}** - {t['assigned']} - Deadline: {t['deadline']}\n"
+        status = "✅" if t.get("done") else "❌"
+        msg += f"{i}. {status} **{t['task']}** - {t['assigned']} - Deadline: {t['deadline']}\n"
     await ctx.send(msg)
 
 @bot.command()
 async def removetask(ctx, index: int):
-    """Xoá task theo số thứ tự: !removetask 1"""
+    """Xóa task theo số: !removetask 1"""
     tasks = load_tasks()
     if 1 <= index <= len(tasks):
         removed = tasks.pop(index - 1)
@@ -64,6 +68,49 @@ async def removetask(ctx, index: int):
         await ctx.send(f"🗑️ Đã xoá task: **{removed['task']}**")
     else:
         await ctx.send("❌ Số thứ tự không hợp lệ.")
+
+@bot.command()
+async def done(ctx, index: int):
+    """Đánh dấu task hoàn thành: !done 1"""
+    tasks = load_tasks()
+    if 1 <= index <= len(tasks):
+        tasks[index - 1]['done'] = True
+        save_tasks(tasks)
+        await ctx.send(f"✅ Task **{tasks[index - 1]['task']}** đã được đánh dấu là hoàn thành.")
+    else:
+        await ctx.send("❌ Số thứ tự không hợp lệ.")
+
+@bot.command()
+async def cleartasks(ctx):
+    """Xóa toàn bộ task (xác nhận 'yes')"""
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel
+
+    await ctx.send("⚠️ Bạn có chắc muốn xoá toàn bộ task không? Nhập `yes` để xác nhận.")
+    try:
+        msg = await bot.wait_for("message", timeout=15.0, check=check)
+        if msg.content.lower() == "yes":
+            save_tasks([])
+            await ctx.send("🧹 Tất cả task đã được xoá.")
+        else:
+            await ctx.send("❌ Huỷ lệnh xoá.")
+    except:
+        await ctx.send("⏰ Hết thời gian xác nhận. Huỷ lệnh.")
+
+@bot.command()
+async def helptask(ctx):
+    """Hiển thị hướng dẫn sử dụng bot"""
+    help_msg = """
+🛠 **Hướng dẫn sử dụng Task Bot:**
+
+📌 `!addtask Tên - @người - deadline` → Thêm task mới  
+📌 `!listtasks` → Hiển thị danh sách task  
+📌 `!removetask số` → Xóa task theo số thứ tự  
+📌 `!done số` → Đánh dấu task đã hoàn thành  
+📌 `!cleartasks` → Xóa toàn bộ task (có xác nhận)  
+📌 `!helptask` → Xem hướng dẫn này
+"""
+    await ctx.send(help_msg)
 
 # Lấy token từ biến môi trường
 bot.run(os.getenv("TOKEN"))
