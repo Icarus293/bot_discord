@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+ALLOWED_CHANNEL_ID = 1387478463480332429
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -22,13 +24,16 @@ def save_tasks(tasks):
     with open(TASK_FILE, "w") as f:
         json.dump(tasks, f, indent=2)
 
+def is_allowed_channel(ctx):
+    return ctx.channel.id == ALLOWED_CHANNEL_ID
+
 @bot.event
 async def on_ready():
     print(f"✅ Bot đang hoạt động với tên: {bot.user}")
 
 @bot.command()
+@commands.check(is_allowed_channel)
 async def addtask(ctx, *, task_info):
-    """Thêm task mới: !addtask Tên - @người - deadline"""
     parts = task_info.split(" - ")
     if len(parts) != 3:
         await ctx.send("❌ Định dạng sai. Ví dụ: `!addtask Viết báo cáo - @Tuấn - 30/06`")
@@ -46,8 +51,8 @@ async def addtask(ctx, *, task_info):
     await ctx.send(f"✅ Đã thêm task: **{task_name}** cho {assigned_to} (Deadline: {deadline})")
 
 @bot.command()
+@commands.check(is_allowed_channel)
 async def listtasks(ctx):
-    """Hiển thị tất cả task"""
     tasks = load_tasks()
     if not tasks:
         await ctx.send("📭 Không có task nào.")
@@ -59,8 +64,8 @@ async def listtasks(ctx):
     await ctx.send(msg)
 
 @bot.command()
+@commands.check(is_allowed_channel)
 async def removetask(ctx, index: int):
-    """Xóa task theo số: !removetask 1"""
     tasks = load_tasks()
     if 1 <= index <= len(tasks):
         removed = tasks.pop(index - 1)
@@ -70,8 +75,8 @@ async def removetask(ctx, index: int):
         await ctx.send("❌ Số thứ tự không hợp lệ.")
 
 @bot.command()
+@commands.check(is_allowed_channel)
 async def done(ctx, index: int):
-    """Đánh dấu task hoàn thành: !done 1"""
     tasks = load_tasks()
     if 1 <= index <= len(tasks):
         tasks[index - 1]['done'] = True
@@ -81,8 +86,8 @@ async def done(ctx, index: int):
         await ctx.send("❌ Số thứ tự không hợp lệ.")
 
 @bot.command()
+@commands.check(is_allowed_channel)
 async def cleartasks(ctx):
-    """Xóa toàn bộ task (xác nhận 'yes')"""
     def check(m):
         return m.author == ctx.author and m.channel == ctx.channel
 
@@ -98,8 +103,8 @@ async def cleartasks(ctx):
         await ctx.send("⏰ Hết thời gian xác nhận. Huỷ lệnh.")
 
 @bot.command()
+@commands.check(is_allowed_channel)
 async def helptask(ctx):
-    """Hiển thị hướng dẫn sử dụng bot"""
     help_msg = """
 🛠 **Hướng dẫn sử dụng Task Bot:**
 
