@@ -2,6 +2,9 @@ import discord
 from discord.ext import commands
 import json
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -24,7 +27,6 @@ async def on_ready():
 
 @bot.command()
 async def addtask(ctx, *, task_info):
-    """Thêm task: !addtask Tên task - @user - deadline"""
     parts = task_info.split(" - ")
     if len(parts) != 3:
         await ctx.send("❌ Định dạng sai. Ví dụ: `!addtask Viết báo cáo - @Tuấn - 30/06`")
@@ -42,7 +44,6 @@ async def addtask(ctx, *, task_info):
 
 @bot.command()
 async def listtasks(ctx):
-    """Hiển thị tất cả task"""
     tasks = load_tasks()
     if not tasks:
         await ctx.send("📭 Không có task nào.")
@@ -52,4 +53,5 @@ async def listtasks(ctx):
         msg += f"{i}. **{t['task']}** - {t['assigned']} - Deadline: {t['deadline']}\n"
     await ctx.send(msg)
 
-bot.run("TOKEN")
+# Lấy token từ biến môi trường
+bot.run(os.getenv("TOKEN"))
