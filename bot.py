@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 intents = discord.Intents.default()
+intents.message_content = True  # ✅ Cần thiết để bot đọc lệnh
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 TASK_FILE = "tasks.json"
