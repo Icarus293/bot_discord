@@ -54,5 +54,16 @@ async def listtasks(ctx):
         msg += f"{i}. **{t['task']}** - {t['assigned']} - Deadline: {t['deadline']}\n"
     await ctx.send(msg)
 
+@bot.command()
+async def removetask(ctx, index: int):
+    """Xoá task theo số thứ tự: !removetask 1"""
+    tasks = load_tasks()
+    if 1 <= index <= len(tasks):
+        removed = tasks.pop(index - 1)
+        save_tasks(tasks)
+        await ctx.send(f"🗑️ Đã xoá task: **{removed['task']}**")
+    else:
+        await ctx.send("❌ Số thứ tự không hợp lệ.")
+
 # Lấy token từ biến môi trường
 bot.run(os.getenv("TOKEN"))
